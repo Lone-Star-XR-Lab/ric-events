@@ -58,6 +58,20 @@
 			gap: 20px;
 		}
 
+		.month-heading {
+			margin: 0;
+			padding-bottom: 8px;
+			border-bottom: 3px solid var(--yellow);
+			color: var(--navy);
+			font-size: 1.1rem;
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+		}
+
+		.month-heading:not(:first-child) {
+			margin-top: 12px;
+		}
+
 		.event-card {
 			display: flex;
 			flex-direction: row;
@@ -352,7 +366,7 @@
 
 				const content = el("div", { className: "event-content" });
 
-				content.appendChild(el("h2", { className: "event-title", text: event.title }));
+				content.appendChild(el("h3", { className: "event-title", text: event.title }));
 
 				const details = el("ul", { className: "event-details" });
 				details.appendChild(buildDetailItem("Date", formatDisplayDate(parseLocalDate(event.date))));
@@ -406,6 +420,32 @@
 					.map(({ event }) => event);
 			}
 
+			// Groups already-sorted events into consecutive runs by calendar
+			// month, so the page can show a "September 2026" style heading
+			// above each group without any month info being hand-maintained
+			// in events.js.
+			function groupByMonth(sortedEvents) {
+				const groups = [];
+				let currentKey = null;
+
+				sortedEvents.forEach(event => {
+					const date = parseLocalDate(event.date);
+					const key = `${date.getFullYear()}-${date.getMonth()}`;
+
+					if (key !== currentKey) {
+						currentKey = key;
+						groups.push({
+							label: date.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+							events: []
+						});
+					}
+
+					groups[groups.length - 1].events.push(event);
+				});
+
+				return groups;
+			}
+
 			function renderEvents() {
 				const today = getToday();
 
@@ -422,7 +462,11 @@
 				}
 
 				const fragment = document.createDocumentFragment();
-				upcomingEvents.forEach(event => fragment.appendChild(buildEventCard(event)));
+
+				groupByMonth(upcomingEvents).forEach(group => {
+					fragment.appendChild(el("h2", { className: "month-heading", text: group.label }));
+					group.events.forEach(event => fragment.appendChild(buildEventCard(event)));
+				});
 
 				eventsContainer.innerHTML = "";
 				eventsContainer.appendChild(fragment);

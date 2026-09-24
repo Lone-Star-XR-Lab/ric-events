@@ -83,6 +83,7 @@
 		}
 
 		.event-image-wrap {
+			position: relative;
 			display: flex;
 			flex: 0 0 280px;
 			align-items: center;
@@ -90,6 +91,39 @@
 			background: #e9edf1;
 			min-height: 200px;
 			overflow: hidden;
+		}
+
+		.flyer-trigger {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			width: 100%;
+			height: 100%;
+			padding: 0;
+			border: none;
+			background: none;
+			cursor: zoom-in;
+		}
+
+		.flyer-trigger:focus-visible {
+			outline: 3px solid var(--yellow);
+			outline-offset: -3px;
+		}
+
+		.flyer-zoom-hint {
+			position: absolute;
+			bottom: 8px;
+			right: 8px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			width: 28px;
+			height: 28px;
+			border-radius: 50%;
+			background: rgba(11, 31, 58, 0.75);
+			color: var(--yellow);
+			font-size: 0.95rem;
+			pointer-events: none;
 		}
 
 		.event-image {
@@ -153,6 +187,18 @@
 			content: " →";
 		}
 
+		.visually-hidden {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			padding: 0;
+			margin: -1px;
+			overflow: hidden;
+			clip: rect(0, 0, 0, 0);
+			white-space: nowrap;
+			border: 0;
+		}
+
 		a:focus-visible,
 		.event-button:focus-visible {
 			outline: 3px solid var(--yellow);
@@ -207,6 +253,62 @@
 			border-radius: 8px;
 		}
 
+		.lightbox-overlay {
+			position: fixed;
+			inset: 0;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			padding: 24px;
+			background: rgba(11, 31, 58, 0.85);
+			z-index: 1000;
+		}
+
+		.lightbox-overlay[hidden] {
+			display: none;
+		}
+
+		.lightbox-content {
+			position: relative;
+			max-width: 100%;
+			max-height: 100%;
+		}
+
+		.lightbox-image {
+			display: block;
+			max-width: 100%;
+			max-height: 90vh;
+			border-radius: 8px;
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+		}
+
+		.lightbox-close {
+			position: absolute;
+			top: -14px;
+			right: -14px;
+			width: 36px;
+			height: 36px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			border: none;
+			border-radius: 50%;
+			background: var(--yellow);
+			color: var(--navy);
+			font-size: 1.1rem;
+			font-weight: bold;
+			line-height: 1;
+			cursor: pointer;
+		}
+
+		.lightbox-close:hover,
+		.lightbox-close:focus-visible {
+			background: var(--navy);
+			color: var(--white);
+			outline: 3px solid var(--yellow);
+			outline-offset: 2px;
+		}
+
 		@media (max-width: 600px) {
 			.event-card {
 				flex-direction: column;
@@ -257,6 +359,13 @@
 
 	</main>
 
+	<div id="lightbox" class="lightbox-overlay" role="dialog" aria-modal="true" aria-label="Enlarged event flyer" hidden>
+		<div class="lightbox-content">
+			<button type="button" id="lightbox-close" class="lightbox-close" aria-label="Close enlarged flyer">✕</button>
+			<img id="lightbox-image" class="lightbox-image" src="" alt="">
+		</div>
+	</div>
+
 	<script src="events.js"></script>
 
 	<script>
@@ -264,6 +373,53 @@
 			const eventsContainer = document.getElementById("events");
 			const noEventsMessage = document.getElementById("no-events");
 			const loadErrorMessage = document.getElementById("load-error");
+
+			const lightbox = document.getElementById("lightbox");
+			const lightboxImage = document.getElementById("lightbox-image");
+			const lightboxClose = document.getElementById("lightbox-close");
+			let lightboxTrigger = null;
+
+			function handleLightboxKeydown(event) {
+				if (event.key === "Escape") {
+					closeLightbox();
+				}
+			}
+
+			// Making <main> inert while the lightbox is open both prevents
+			// Tab from reaching content behind the overlay (no separate
+			// focus-trap logic needed, since the close button is the only
+			// focusable element left) and hides that background content
+			// from screen readers, which is what aria-modal="true" implies.
+			const mainContent = document.querySelector("main");
+
+			function openLightbox(src, alt, triggerEl) {
+				lightboxTrigger = triggerEl;
+				lightboxImage.src = src;
+				lightboxImage.alt = alt;
+				lightbox.hidden = false;
+				mainContent.inert = true;
+				lightboxClose.focus();
+				document.addEventListener("keydown", handleLightboxKeydown);
+			}
+
+			function closeLightbox() {
+				lightbox.hidden = true;
+				lightboxImage.src = "";
+				mainContent.inert = false;
+				document.removeEventListener("keydown", handleLightboxKeydown);
+
+				if (lightboxTrigger) {
+					lightboxTrigger.focus();
+				}
+			}
+
+			lightboxClose.addEventListener("click", closeLightbox);
+
+			lightbox.addEventListener("click", event => {
+				if (event.target === lightbox) {
+					closeLightbox();
+				}
+			});
 
 			// Base URL for a MyWorkshops course-code search. Used to build a
 			// registration link automatically from an event's "course" field
@@ -352,15 +508,29 @@
 
 				if (event.image) {
 					const imageWrap = el("div", { className: "event-image-wrap" });
+					const trigger = el("button", {
+						className: "flyer-trigger",
+						attrs: {
+							type: "button",
+							"aria-label": `View larger flyer for ${event.title}`
+						}
+					});
 					const image = el("img", {
 						className: "event-image",
 						attrs: {
 							src: event.image,
-							alt: event.imageAlt || event.title,
+							alt: "",
 							loading: "lazy"
 						}
 					});
-					imageWrap.appendChild(image);
+
+					trigger.appendChild(image);
+					trigger.addEventListener("click", () => {
+						openLightbox(event.image, event.imageAlt || event.title, trigger);
+					});
+
+					imageWrap.appendChild(trigger);
+					imageWrap.appendChild(el("span", { className: "flyer-zoom-hint", text: "🔍", attrs: { "aria-hidden": "true" } }));
 					card.appendChild(imageWrap);
 				}
 
@@ -401,6 +571,7 @@
 							rel: "noopener noreferrer"
 						}
 					});
+					button.appendChild(el("span", { className: "visually-hidden", text: " (opens in a new tab)" }));
 					content.appendChild(button);
 				}
 

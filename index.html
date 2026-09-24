@@ -6,7 +6,7 @@
 	<meta name="robots" content="noindex, nofollow" />
 	<meta name="color-scheme" content="light" />
 
-	<title>RIC Upcoming Events</title>
+	<title>RIC Events</title>
 
 	<style>
 		:root {
@@ -43,30 +43,24 @@
 		}
 
 		.header {
-			margin-bottom: 24px;
+			margin-bottom: 16px;
 		}
 
 		.header h1 {
-			margin: 0 0 8px;
-			color: var(--navy);
-			font-size: 2rem;
-		}
-
-		.header p {
 			margin: 0;
-			color: var(--muted);
-			font-size: 1rem;
+			color: var(--navy);
+			font-size: 1.4rem;
 		}
 
 		.events-grid {
 			display: grid;
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-			gap: 24px;
+			grid-template-columns: 1fr;
+			gap: 20px;
 		}
 
 		.event-card {
 			display: flex;
-			flex-direction: column;
+			flex-direction: row;
 			background: var(--white);
 			border: 1px solid var(--border);
 			border-radius: 12px;
@@ -76,11 +70,11 @@
 
 		.event-image-wrap {
 			display: flex;
+			flex: 0 0 280px;
 			align-items: center;
 			justify-content: center;
 			background: #e9edf1;
-			width: 100%;
-			max-height: 320px;
+			min-height: 200px;
 			overflow: hidden;
 		}
 
@@ -88,7 +82,6 @@
 			display: block;
 			width: 100%;
 			height: 100%;
-			max-height: 320px;
 			object-fit: contain;
 		}
 
@@ -96,6 +89,7 @@
 			display: flex;
 			flex-direction: column;
 			flex: 1;
+			min-width: 0;
 			padding: 20px;
 		}
 
@@ -199,13 +193,15 @@
 			border-radius: 8px;
 		}
 
-		@media (max-width: 750px) {
-			.events-grid {
-				grid-template-columns: 1fr;
+		@media (max-width: 600px) {
+			.event-card {
+				flex-direction: column;
 			}
 
-			.header h1 {
-				font-size: 1.65rem;
+			.event-image-wrap {
+				flex: none;
+				width: 100%;
+				max-height: 240px;
 			}
 		}
 	</style>
@@ -225,10 +221,6 @@
 
 		<div class="header">
 			<h1>Upcoming Events</h1>
-			<p>
-				Workshops, professional development, technology demonstrations,
-				and other activities hosted by the Research &amp; Innovation Center.
-			</p>
 		</div>
 
 		<div id="events" class="events-grid" hidden></div>
